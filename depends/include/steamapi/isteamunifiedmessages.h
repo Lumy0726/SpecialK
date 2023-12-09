@@ -1,4 +1,4 @@
-﻿//====== Copyright ï¿½ 1996-2007, Valve Corporation, All rights reserved. =======
+﻿//====== Copyright � 1996-2007, Valve Corporation, All rights reserved. =======
 //
 // Purpose: Interface to unified messages client
 //

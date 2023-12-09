@@ -1,5 +1,5 @@
 
-on bash shell
+on commit 23fc8851, on bash shell
 
 alias sed_remove_crlf_bom='sed -e $'\''1s/^\xef\xbb\xbf//g'\'' -e $'\''s/\r$//g'\'''
 alias sed_to_bom='sed -e '\''1!b'\'' -e $'\''/^\xef\xbb\xbf/!s/^/\xef\xbb\xbf/g'\'''
@@ -9,5 +9,30 @@ while IFS= read -r -d $'\n' vPath ;do { if ! test "$(head -c 3 "$vPath")" = $'\x
 while IFS= read -r -d $'\n' vPath ;do { if ! test "$(head -c 3 "$vPath")" = $'\xef\xbb\xbf'; then { echo "$vPath"; sed_remove_crlf_bom "$vPath" | piconv -f cp1252 -t utf-8 | sed_to_crlf | sed_to_bom > "$vPath"Bak ;if ! test "$(tail -c 1 "$vPath")" = ''; then { printf '\n' >> "$vPath"Bak ;}; fi ;command rm "$vPath" ;mv "$vPath"Bak "$vPath" ;} ;fi ;} ;done < <(find ./depends/include -name 'boost' -prune -or -name 'resource.h' -or -path '*nvapi/*.h' -print -or -path '*steamapi/*.h' -print)
 while IFS= read -r -d $'\n' vPath ;do { if ! test "$(head -c 3 "$vPath")" = $'\xef\xbb\xbf'; then { echo "$vPath"; sed_remove_crlf_bom "$vPath" | piconv -f cp1252 -t utf-8 | sed_to_crlf | sed_to_bom > "$vPath"Bak ;if ! test "$(tail -c 1 "$vPath")" = ''; then { printf '\n' >> "$vPath"Bak ;}; fi ;command rm "$vPath" ;mv "$vPath"Bak "$vPath" ;} ;fi ;} ;done < <(find ./depends/src/DirectXTex -name 'resource.h' -or -name '*.cpp' -print -or -name '*.h' -print)
 
+
+on commit ff3e84c3, on bash shell
+
+alias sed_remove_crlf_bom='sed -e $'\''1s/^\xef\xbb\xbf//g'\'' -e $'\''s/\r$//g'\'''
+alias sed_to_bom='sed -e '\''1!b'\'' -e $'\''/^\xef\xbb\xbf/!s/^/\xef\xbb\xbf/g'\'''
+alias sed_to_crlf='sed -e $'\''/\r$/!s/$/\r/g'\'''
+
+git restore -s HEAD~1 -W '*steamapi*'
+for vPath in\
+  './depends/include/steamapi/isteamapplist.h'\
+  './depends/include/steamapi/isteamapps.h'\
+  './depends/include/steamapi/isteamhttp.h'\
+  './depends/include/steamapi/isteammatchmaking.h'\
+  './depends/include/steamapi/isteamnetworking.h'\
+  './depends/include/steamapi/isteamparentalsettings.h'\
+  './depends/include/steamapi/isteamremotestorage.h'\
+  './depends/include/steamapi/isteamscreenshots.h'\
+  './depends/include/steamapi/isteamunifiedmessages.h'\
+  './depends/include/steamapi/isteamuserstats.h'\
+  './depends/include/steamapi/isteamutils.h'\
+  './depends/include/steamapi/matchmakingtypes.h'\
+  './depends/include/steamapi/steamclientpublic.h'\
+  './depends/include/steamapi/steamuniverse.h'\
+  ;do { echo "$vPath"; sed_to_crlf "$vPath" | sed_to_bom > "$vPath"Bak ;if ! test "$(tail -c 1 "$vPath")" = ''; then { printf '\n' >> "$vPath"Bak ;}; fi ;command rm "$vPath" ;mv "$vPath"Bak "$vPath" ;git add "$vPath" ;} ;done
+git restore -W '*steamapi*'
 
 //EOF
