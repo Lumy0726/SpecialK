@@ -1,4 +1,4 @@
-/**
+ï»¿/**
  * This file is part of Special K.
  *
  * Special K is free software : you can redistribute it
@@ -463,10 +463,10 @@ NvAPI_Disp_GetHdrCapabilities_Override ( NvU32                displayId,
       L"  | Blue Primary... |  %f, %f\n"
       L"  | White Point.... |  %f, %f\n"
       L"  | =============== |\n"
-      L"  | Min Luminance.. |  %10.5f cd/m²\n"
-      L"  | Max Luminance.. |  %10.5f cd/m²\n"
-      L"  |  |- FullFrame.. |  %10.5f cd/m²\n"
-      L"  | SDR Luminance.. |  %10.5f cd/m²\n"
+      L"  | Min Luminance.. |  %10.5f cd/mÂ²\n"
+      L"  | Max Luminance.. |  %10.5f cd/mÂ²\n"
+      L"  |  |- FullFrame.. |  %10.5f cd/mÂ²\n"
+      L"  | SDR Luminance.. |  %10.5f cd/mÂ²\n"
       L"  | =============== |\n"
       L"  | ST2084 EOTF.... |  %s\n"
       L"  | CTA-861.3 HDR.. |  %s\n"

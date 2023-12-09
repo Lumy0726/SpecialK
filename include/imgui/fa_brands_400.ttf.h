@@ -1,4 +1,4 @@
-#ifndef FA_BRANDS_400_TTF_H
+﻿#ifndef FA_BRANDS_400_TTF_H
 #define FA_BRANDS_400_TTF_H
 
 #include <cstdint>

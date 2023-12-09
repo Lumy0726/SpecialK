@@ -1,4 +1,4 @@
-//
+﻿//
 // Copyright 2023 Andon "Kaldaien" Coleman
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy

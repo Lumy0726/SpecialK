@@ -1,4 +1,4 @@
-#ifndef VULKAN_METAL_H_
+﻿#ifndef VULKAN_METAL_H_
 #define VULKAN_METAL_H_ 1
 
 /*

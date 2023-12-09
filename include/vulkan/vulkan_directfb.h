@@ -1,4 +1,4 @@
-#ifndef VULKAN_DIRECTFB_H_
+﻿#ifndef VULKAN_DIRECTFB_H_
 #define VULKAN_DIRECTFB_H_ 1
 
 /*

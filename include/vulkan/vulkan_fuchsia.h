@@ -1,4 +1,4 @@
-#ifndef VULKAN_FUCHSIA_H_
+﻿#ifndef VULKAN_FUCHSIA_H_
 #define VULKAN_FUCHSIA_H_ 1
 
 /*

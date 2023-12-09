@@ -1,4 +1,4 @@
-#ifndef __SK__ADL_H__
+﻿#ifndef __SK__ADL_H__
 #define __SK__ADL_H__
 
 #include <adl/adl_structures.h>

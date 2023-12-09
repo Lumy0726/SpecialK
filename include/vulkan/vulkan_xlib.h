@@ -1,4 +1,4 @@
-#ifndef VULKAN_XLIB_H_
+﻿#ifndef VULKAN_XLIB_H_
 #define VULKAN_XLIB_H_ 1
 
 /*

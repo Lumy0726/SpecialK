@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 /**
  * This file is part of Special K.
  *

@@ -1,4 +1,4 @@
-//
+ï»¿//
 // Copyright 2022 Andon "Kaldaien" Coleman
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -586,25 +586,25 @@ SK_ER_InitConfig (void)
   auto& addresses =
     SK_ER_PlugIn.addresses;
 
-  addresses [L"ELDEN RING™  1.2.1.0"].
+  addresses [L"ELDEN RINGâ„¢  1.2.1.0"].
    cached =
         { { "clock_tick0", 0x0DFEF87 }, { "clock_tick1", 0x0DFEFA3 },
           { "clock_tick2", 0x0DFEFAF }, { "clock_tick3", 0x0DFEFC0 },
           { "clock_tick4", 0x0DFEFCD }, { "clock_tick5", 0x0DFEFDD },
           { "write_delta", 0x25A7F72 }, { "dt_float",    0x3B4FE28 } };
-  addresses [L"ELDEN RING™  1.2.2.0"].
+  addresses [L"ELDEN RINGâ„¢  1.2.2.0"].
    cached =
         { { "clock_tick0", 0x0DFF397 }, { "clock_tick1", 0x0DFF3B3 },
           { "clock_tick2", 0x0DFF3BF }, { "clock_tick3", 0x0DFF3D0 },
           { "clock_tick4", 0x0DFF3DD }, { "clock_tick5", 0x0DFF3ED },
           { "write_delta", 0x25A8412 }, { "dt_float",    0x3B4FE38 } };
-  addresses [L"ELDEN RING™  1.2.3.0"].
+  addresses [L"ELDEN RINGâ„¢  1.2.3.0"].
    cached =
         { { "clock_tick0", 0x0DFFE77 }, { "clock_tick1", 0x0DFFE93 },
           { "clock_tick2", 0x0DFFECD }, { "clock_tick3", 0x0DFFE9F },
           { "clock_tick4", 0x0DFFEB0 }, { "clock_tick5", 0x0DFFEBD },
           { "write_delta", 0x25A9752 }, { "dt_float",    0x3B52E78 } };
-  addresses [L"ELDEN RING™  1.3.1.0"].
+  addresses [L"ELDEN RINGâ„¢  1.3.1.0"].
    cached =
         { { "clock_tick0",  0x0E07F47 }, { "clock_tick1",  0x0E07F63 },
           { "clock_tick2",  0x0E07F9D }, { "clock_tick3",  0x0E07F6F },
@@ -612,7 +612,7 @@ SK_ER_InitConfig (void)
           { "write_delta",  0x25B2D62 }, { "dt_float",     0x3B63FE8 },
           { "write_delta0", 0x0D75074 }, { "write_delta1", 0x0D75086 },
         };
-  addresses [L"ELDEN RING™  1.3.2.0"].
+  addresses [L"ELDEN RINGâ„¢  1.3.2.0"].
    cached =
         { { "clock_tick0",  0x0E07F27 }, { "clock_tick1",  0x0E07F43 },
           { "clock_tick2",  0x0E07F7D }, { "clock_tick3",  0x0E07F4F },

@@ -1,4 +1,4 @@
-#ifndef VULKAN_BETA_H_
+﻿#ifndef VULKAN_BETA_H_
 #define VULKAN_BETA_H_ 1
 
 /*

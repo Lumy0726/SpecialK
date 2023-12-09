@@ -1,4 +1,4 @@
-#ifndef VULKAN_SCREEN_H_
+﻿#ifndef VULKAN_SCREEN_H_
 #define VULKAN_SCREEN_H_ 1
 
 /*

@@ -1,4 +1,4 @@
-#include <SpecialK/stdafx.h>
+﻿#include <SpecialK/stdafx.h>
 
 #if (defined (NOGDI) || (! defined (_WINGDI_)))
 #undef        NOGDI

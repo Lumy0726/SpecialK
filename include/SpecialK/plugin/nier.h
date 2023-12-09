@@ -1,4 +1,4 @@
-//
+﻿//
 // Copyright 2017  Andon  "Kaldaien" Coleman,
 //                 Niklas "DrDaxxy"  Kielblock,
 //                 Peter  "Durante"  Thoman

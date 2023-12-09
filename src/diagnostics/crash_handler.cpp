@@ -1,4 +1,4 @@
-/**
+﻿/**
  * This file is part of Special K.
  *
  * Special K is free software : you can redistribute it
@@ -1164,7 +1164,7 @@ SK_TopLevelExceptionFilter ( _In_ struct _EXCEPTION_POINTERS *ExceptionInfo )
           {
             hw_status.append (
               SK_FormatStringW (
-                L" at %5.2f�C", SK_GPU_GetTempInC (0)
+                L" at %5.2f°C", SK_GPU_GetTempInC (0)
               )
             );
           }

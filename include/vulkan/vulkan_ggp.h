@@ -1,4 +1,4 @@
-#ifndef VULKAN_GGP_H_
+﻿#ifndef VULKAN_GGP_H_
 #define VULKAN_GGP_H_ 1
 
 /*

@@ -1,4 +1,4 @@
-#ifndef FA_SOLID_900_TTF_H
+﻿#ifndef FA_SOLID_900_TTF_H
 #define FA_SOLID_900_TTF_H
 
 #include <cstdint>

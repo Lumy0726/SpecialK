@@ -1,4 +1,4 @@
-#pragma pack (push,8)
+﻿#pragma pack (push,8)
 typedef struct _UNICODE_STRING {
   USHORT         Length;
   USHORT         MaximumLength;

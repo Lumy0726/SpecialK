@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <SpecialK/steam_api.h>
 #include <SpecialK/core.h>

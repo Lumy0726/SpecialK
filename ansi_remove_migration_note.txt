@@ -1,0 +1,13 @@
+
+on bash shell
+
+alias sed_remove_crlf_bom='sed -e $'\''1s/^\xef\xbb\xbf//g'\'' -e $'\''s/\r$//g'\'''
+alias sed_to_bom='sed -e '\''1!b'\'' -e $'\''/^\xef\xbb\xbf/!s/^/\xef\xbb\xbf/g'\'''
+alias sed_to_crlf='sed -e $'\''/\r$/!s/$/\r/g'\'''
+
+while IFS= read -r -d $'\n' vPath ;do { if ! test "$(head -c 3 "$vPath")" = $'\xef\xbb\xbf'; then { echo "$vPath"; sed_remove_crlf_bom "$vPath" | piconv -f cp1252 -t utf-8 | sed_to_crlf | sed_to_bom > "$vPath"Bak ;if ! test "$(tail -c 1 "$vPath")" = ''; then { printf '\n' >> "$vPath"Bak ;}; fi ;command rm "$vPath" ;mv "$vPath"Bak "$vPath" ;} ;fi ;} ;done < <(find . -path '[.]/depends' -prune -or -name 'resource.h' -or -name '*.cpp' -print -or -name '*.h' -print)
+while IFS= read -r -d $'\n' vPath ;do { if ! test "$(head -c 3 "$vPath")" = $'\xef\xbb\xbf'; then { echo "$vPath"; sed_remove_crlf_bom "$vPath" | piconv -f cp1252 -t utf-8 | sed_to_crlf | sed_to_bom > "$vPath"Bak ;if ! test "$(tail -c 1 "$vPath")" = ''; then { printf '\n' >> "$vPath"Bak ;}; fi ;command rm "$vPath" ;mv "$vPath"Bak "$vPath" ;} ;fi ;} ;done < <(find ./depends/include -name 'boost' -prune -or -name 'resource.h' -or -path '*nvapi/*.h' -print -or -path '*steamapi/*.h' -print)
+while IFS= read -r -d $'\n' vPath ;do { if ! test "$(head -c 3 "$vPath")" = $'\xef\xbb\xbf'; then { echo "$vPath"; sed_remove_crlf_bom "$vPath" | piconv -f cp1252 -t utf-8 | sed_to_crlf | sed_to_bom > "$vPath"Bak ;if ! test "$(tail -c 1 "$vPath")" = ''; then { printf '\n' >> "$vPath"Bak ;}; fi ;command rm "$vPath" ;mv "$vPath"Bak "$vPath" ;} ;fi ;} ;done < <(find ./depends/src/DirectXTex -name 'resource.h' -or -name '*.cpp' -print -or -name '*.h' -print)
+
+
+//EOF

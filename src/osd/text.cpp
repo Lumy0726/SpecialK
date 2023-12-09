@@ -1,4 +1,4 @@
-/**
+ï»¿/**
  * This file is part of Special K.
  *
  * Special K is free software : you can redistribute it
@@ -580,20 +580,20 @@ SK_FormatTemperature (double in_temp, SK_UNITS in_unit, SK_UNITS out_unit, SK_TL
     //converted = in_temp * 2 + 30;
     converted = (in_temp * (9.0/5.0)) + 32.0;
     len       =
-      SK_FormatStringView (pszStr, (const char *)u8"%#5.1f°F", converted);
+      SK_FormatStringView (pszStr, (const char *)u8"%#5.1fÂ°F", converted);
   }
 
   else if (in_unit == Fahrenheit && out_unit == Celsius)
   {
     converted = (in_temp - 32.0) * (5.0/9.0);
     len       =
-      SK_FormatStringView (pszStr, (const char *)u8"%#4.1f°C", converted);
+      SK_FormatStringView (pszStr, (const char *)u8"%#4.1fÂ°C", converted);
   }
 
   else
   {
     len =
-      SK_FormatStringView (pszStr, (const char *)u8"%#4.1f°C", in_temp);
+      SK_FormatStringView (pszStr, (const char *)u8"%#4.1fÂ°C", in_temp);
   }
                   ((char *)pszStr.data ())[std::min ((size_t)16, len)] = '\0';
   return                   pszStr;

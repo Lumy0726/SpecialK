@@ -1,4 +1,4 @@
-#include <SpecialK/stdafx.h>
+﻿#include <SpecialK/stdafx.h>
 
 #if 0
 /**
