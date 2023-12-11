@@ -2878,3 +2878,194 @@ SK_Framerate_EnergyControlPanel (void)
     ImGui::TreePop    ();
   }
 }
+
+
+#include <chrono>
+
+//-------------------------
+//static field of LimitTimeGap
+//-------------------------
+
+bool LimitTimeGap::isQPCValid = false;
+__int64 LimitTimeGap::tickFreq = 1;
+__int64 LimitTimeGap::lastKnownTick = 0;
+LimitTimeGap LimitTimeGap::limitForPresentFrontGap;
+LimitTimeGap LimitTimeGap::limitForPresentBackGap;
+LimitTimeGap LimitTimeGap::limitForBackWait;
+LimitTimeGap LimitTimeGap::limitForBack2Front;
+
+
+//-------------------------
+//function of LimitTimeGap
+//-------------------------
+
+//constructor
+LimitTimeGap::LimitTimeGap() {
+  LimitTimeGap::init();
+}
+LimitTimeGap::LimitTimeGap(const LimitTimeGap& input) {
+  tickStamp = input.tickStamp;
+}
+//destructor
+LimitTimeGap::~LimitTimeGap() {
+  ;
+}
+//assign operator
+LimitTimeGap& LimitTimeGap::operator=(const LimitTimeGap& input) {
+  //UpperClass::operator=(input);
+  if (this != &input) {
+    tickStamp = input.tickStamp;
+  }
+  return *this;
+}
+//
+__int64 LimitTimeGap::updateStamp() {
+  return tickStamp = getTick();
+}
+//
+__int64 LimitTimeGap::updateStampULK() {
+  return tickStamp = getLastKnownTick();
+}
+//
+__int64 LimitTimeGap::waitForGap(
+  __int64 usec,
+  bool updateStamp,
+  __int64 busyWaitTrigT,
+  __int64 nonBusyWaitT
+) {
+  if (!(inited()) || usec < static_cast<__int64>(0)) { return static_cast<__int64>(0); }
+  __int64 curTick = getTick();
+  __int64 curUsec;
+  __int64 prevUsec = static_cast<__int64>(0);
+  for (;; curTick = getTick()) {
+    curUsec = (curTick - tickStamp) * static_cast<__int64>(1000000) / tickFreq;
+    if (usec <= curUsec) {
+      //CASE OF: time value exceeds (stamp tick + 'usec').
+      break;
+    }
+    if (curUsec + static_cast<__int64>(1000) < prevUsec) {
+      //CASE OF: 'curUsec' decreased, this shouldn't happen.
+      break; // break, to prevent deadlock.
+    }
+    if (usec - curUsec >= busyWaitTrigT) {
+      //CASE OF: remained time is more than 'busyWaitTrigT' microsec.
+      //Sleep 'nonBusyWaitT' microsec (C++ chrono).
+      std::this_thread::sleep_for(std::chrono::microseconds(nonBusyWaitT));
+    }
+    //*
+    else {
+      SK_YieldProcessor(static_cast<INT64>(
+        tickStamp + usec * tickFreq / static_cast<__int64>(1000000)
+        ));
+    }
+    //*/
+    prevUsec = curUsec;
+  }
+  if (updateStamp) { tickStamp = curTick; }
+  return curTick;
+}
+//
+__int64 LimitTimeGap::waitForGapULK(
+  __int64 usec,
+  bool updateStamp,
+  __int64 busyWaitTrigT,
+  __int64 nonBusyWaitT
+) {
+  if (!(inited()) || usec < static_cast<__int64>(0)) { return static_cast<__int64>(0); }
+  __int64 curTick = getLastKnownTick();
+  __int64 curUsec;
+  __int64 prevUsec = static_cast<__int64>(0);
+  for (;; curTick = getTick()) {
+    curUsec = (curTick - tickStamp) * static_cast<__int64>(1000000) / tickFreq;
+    if (usec <= curUsec) {
+      //CASE OF: time value exceeds (stamp tick + 'usec').
+      break;
+    }
+    if (curUsec + static_cast<__int64>(1000) < prevUsec) {
+      //CASE OF: 'curUsec' decreased, this shouldn't happen.
+      break; // break, to prevent deadlock.
+    }
+    if (usec - curUsec >= busyWaitTrigT) {
+      //CASE OF: remained time is more than 'busyWaitTrigT' microsec.
+      //Sleep 'nonBusyWaitT' microsec (C++ chrono).
+      std::this_thread::sleep_for(std::chrono::microseconds(nonBusyWaitT));
+    }
+    //*
+    else {
+      SK_YieldProcessor(static_cast<INT64>(
+        tickStamp + usec * tickFreq / static_cast<__int64>(1000000)
+        ));
+    }
+    //*/
+    prevUsec = curUsec;
+  }
+  if (updateStamp) { tickStamp = curTick; }
+  return curTick;
+}
+
+
+//-------------------------
+//static function of LimitTimeGap
+//-------------------------
+
+//
+void LimitTimeGap::init() {
+  if (!isQPCValid) {
+    LARGE_INTEGER temp;
+    QueryPerformanceFrequency(&temp);
+    if (temp.QuadPart != (LONGLONG)0) {
+      isQPCValid = true;
+      tickFreq = static_cast<__int64>(temp.QuadPart);
+      getTick(); // update 'lastKnownTick'.
+    }
+    else {
+      tickFreq = static_cast<__int64>(1);
+      lastKnownTick = static_cast<__int64>(0);
+    }
+  }
+}
+//
+__int64 LimitTimeGap::getTickFreq() {
+  init(); return tickFreq;
+}
+//
+__int64 LimitTimeGap::getTick() {
+  if (isQPCValid) {
+    LARGE_INTEGER temp;
+    QueryPerformanceCounter(&temp);
+    lastKnownTick = static_cast<__int64>(temp.QuadPart);
+  }
+  return lastKnownTick;
+}
+//
+__int64 LimitTimeGap::getLastKnownTick() {
+  return lastKnownTick;
+}
+//
+__int64 LimitTimeGap::mSec2uSec(int input) {
+  return static_cast<__int64>(input) * static_cast<__int64>(1000);
+}
+//
+int LimitTimeGap::uSec2mSec(__int64 input) {
+  return static_cast<int>(input / static_cast<__int64>(1000));
+}
+//
+void LimitTimeGap::onPresentFront() {
+  getTick();
+  //this forces rough rendering time to be greater than value.
+  limitForBack2Front.waitForGapULK(4000, false);
+  //this forces time gap between 'present' to be greater than value.
+  limitForPresentFrontGap.waitForGapULK(-1, true);
+  return;
+}
+//
+void LimitTimeGap::onPresentBack() {
+  //this delays next rendering startup.
+  limitForBackWait.updateStamp();
+  limitForBackWait.waitForGapULK(4333, false);
+  //this forces rough time gap between 'rendering start',
+  //  to be greater than value.
+  limitForPresentBackGap.waitForGapULK(-1, true);
+  limitForBack2Front.updateStampULK();
+  return;
+}

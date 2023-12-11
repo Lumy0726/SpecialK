@@ -1828,6 +1828,7 @@ SK_D3D9_Present_GrandCentral ( sk_d3d9_swap_dispatch_s* dispatch )
 
 
     SK_BeginBufferSwap ();
+    LimitTimeGap::onPresentFront();
 
 
     HRESULT hr =
@@ -1854,6 +1855,7 @@ SK_D3D9_Present_GrandCentral ( sk_d3d9_swap_dispatch_s* dispatch )
       if (hr == D3D_OK)
         hr = D3DERR_DEVICELOST;
     }
+    LimitTimeGap::onPresentBack();
 
     // Queue-up End of Frame Screenshots
     SK_D3D9_ProcessScreenshotQueue (SK_ScreenshotStage::EndOfFrame);

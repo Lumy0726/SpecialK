@@ -2979,6 +2979,7 @@ SK_DXGI_PresentBase ( IDXGISwapChain         *This,
       }
     }
 
+    LimitTimeGap::onPresentFront();
     HRESULT hr =
       _SkipThisFrame ? _Present ( rb.d3d11.immediate_ctx != nullptr ?
                                                                   0 : 1,
@@ -2986,6 +2987,7 @@ SK_DXGI_PresentBase ( IDXGISwapChain         *This,
                                 ( ( rb.d3d11.immediate_ctx != nullptr) ? DXGI_PRESENT_ALLOW_TEARING
                                                                        : 0 ) ) :
                        _Present ( interval, flags );
+    LimitTimeGap::onPresentBack();
 
     if (_SkipThisFrame)
       hr = S_OK;

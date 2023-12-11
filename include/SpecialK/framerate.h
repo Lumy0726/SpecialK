@@ -764,6 +764,92 @@ extern void SK_Scheduler_Init     (void);
 extern void SK_Scheduler_Shutdown (void);
 
 
+class LimitTimeGap {
+  //-------------------------
+  //static field of LimitTimeGap
+  //-------------------------
+private:
+  static bool isQPCValid;
+  static __int64 tickFreq;
+  static __int64 lastKnownTick;
+  static LimitTimeGap limitForPresentFrontGap;
+  static LimitTimeGap limitForPresentBackGap;
+  static LimitTimeGap limitForBackWait;
+  static LimitTimeGap limitForBack2Front;
+
+
+  //-------------------------
+  //field of LimitTimeGap
+  //-------------------------
+protected:
+  __int64 tickStamp;
+
+
+  //-------------------------
+  //function of LimitTimeGap
+  //-------------------------
+public:
+  //constructor
+  LimitTimeGap();
+  LimitTimeGap(const LimitTimeGap& input);
+  //destructor
+  virtual ~LimitTimeGap();
+  //assign operator
+  virtual LimitTimeGap& operator=(const LimitTimeGap& input);
+  //comparator (memory address)
+  virtual bool operator==(const LimitTimeGap& input) const {
+    return this == &input;
+  }
+  virtual bool operator<(const LimitTimeGap& input) const {
+    return this < &input;
+  }
+  virtual bool operator>(const LimitTimeGap& input) const {
+    return this > &input;
+  }
+  virtual bool operator<=(const LimitTimeGap& input) const {
+    return this <= &input;
+  }
+  virtual bool operator>=(const LimitTimeGap& input) const {
+    return this >= &input;
+  }
+
+  //'updateStamp' - update time stamp tick.
+  virtual __int64 updateStamp();
+  //'updateStamp' - update time stamp tick, use 'lastKnownTick'.
+  virtual __int64 updateStampULK();
+  //'waitForGap' - wait until time value becomes (stamp tick + 'usec').
+  virtual __int64 waitForGap(
+    __int64 usec,
+    bool updateStamp,
+    __int64 busyWaitTrigT = static_cast<__int64>(2000),
+    __int64 nonBusyWaitT = static_cast<__int64>(1000)
+  );
+  //'waitForGap' - wait until time value becomes (stamp tick + 'usec').
+  //  This use 'kastKnownTick' for the first time when getting time value.
+  virtual __int64 waitForGapULK(
+    __int64 usec,
+    bool updateStamp,
+    __int64 busyWaitTrigT = static_cast<__int64>(2000),
+    __int64 nonBusyWaitT = static_cast<__int64>(1000)
+  );
+
+  //-------------------------
+  //static function of LimitTimeGap
+  //-------------------------
+public:
+  static void init();
+  static bool inited() { return isQPCValid; }
+  static __int64 getTickFreq();
+  static __int64 getTick();
+  static __int64 getLastKnownTick();
+  static __int64 mSec2uSec(int input);
+  static int uSec2mSec(__int64 input);
+
+  static void onPresentFront();
+  static void onPresentBack();
+};
+
+
 #include <dwmapi.h>
 
 extern HRESULT WINAPI
