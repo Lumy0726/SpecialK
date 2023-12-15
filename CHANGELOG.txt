@@ -1,4 +1,82 @@
-﻿23.12.9
+﻿23.12.15
+========
+ + Added D3D11 stateblock backup/restore and set rasterizer state to sane defaults
+     before triggering ReShade render passes early.
+ + Adjusted DXGI budget tracking thread to only change monitored adapters in
+     DXGI-based APIs if the game's running on a different adapter than the
+       thread is actively monitoring.
+
+23.12.13.1
+==========
+ + Reduced MMDevAPI overhead when the volume control widget is open
+
+23.12.13
+========
+ + Improved handling of audio device hot-plug when game is running on non-preferred
+     audio device. It should transition to the preferred device immediately now.
+ + Audio Session selector now enumerates sessions for all end-points, so applications
+     running on a different audio device than the game show up as expected and their
+       volume can be controlled.
+ + If a process has multiple audio sessions and the one being controlled by the audio
+     widget goes idle, automatically switch to one of its non-idle audio sessions.
+
+23.12.11.2
+==========
+ + Fixed ReShade on-demand injection in D3D12 games so that it renders its effects
+
+23.12.11.1
+==========
+ + Fixed unaligned D3D12 Descriptor Heap access on CPU handles used for ReShade
+
+23.12.11
+========
+ + Improved UI scaling on Audio Management UI
+ + Hide "Switch Audio Device" button if there is only 1 active audio device
+ + Add support for closing Audio popups by clicking outside or pressing Escape
+
+23.12.10.2
+==========
+ + Added sRGB support to ReShade when loaded as a plug-in, which is necessary
+     for various edge-detect shaders (SMAA, AMD CAS, ...) that require sRGB.
+
+    >> Partial support has been added to D3D12; all formats except R10G10B10A2
+
+     * In HDR, sRGB is unnecessary. Just make sure ReShade is set to "Draw First".
+
+ + Custom SDR EOTF can be configured in-game, rather than requiring a manual INI edit,
+     by selecting "Custom" from the HDR Content EOTF combo box.
+
+23.12.10.1
+==========
+ + Fixed unnecessary audio device changes causing brief audio drop-outs during Alt+Tab
+
+23.12.10
+========
+ + Added option to associate monitors with audio devices, such that SK will change
+     the game's output audio device depending on which monitor the game is using.
+
+    >> See the Display menu for more, if you want this behavior globally, then
+         configure it once and copy the "Display.Audio" section of the game's INI
+           to Global\master_SpecialK.ini
+
+23.12.9.4
+=========
+ + Adjusted spacing on OSD Frame Counter
+
+23.12.9.3
+=========
+ + Added Frame Counter option to OSD's FPS reporting
+
+23.12.9.2
+=========
+ + Fixed crash in IMMDeviceEnumerator::EnumAudioEndpoints (...) on some drivers
+
+23.12.9.1
+=========
+ + Properly transition to the game's active device if the audio session is
+     stream re-routed so volume control works correctly after changing devs
+
+23.12.9
 =======
  + Added button to change the device the game outputs to in Audio Management
 
