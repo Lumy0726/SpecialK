@@ -634,6 +634,7 @@ struct sk_config_t
       } latent_sync;
       bool    use_amd_mwaitx       = true;
       int     limitG_back_return_to_front          = 0;
+      int     limitG_back_to_front                 = 0;
       int     limitG_between_front                 = 0;
       int     limitG_back_to_back_return           = 0;
       int     limitG_between_back_return           = 0;
