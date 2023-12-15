@@ -2890,14 +2890,17 @@ bool LimitTimeGap::isQPCValid = false;
 __int64 LimitTimeGap::tickFreq = 1;
 __int64 LimitTimeGap::lastKnownTick = 0;
 LimitTimeGap LimitTimeGap::limitForBackRet2Front;
+LimitTimeGap LimitTimeGap::limitForBack2Front;
 LimitTimeGap LimitTimeGap::limitForBetweenFront;
 LimitTimeGap LimitTimeGap::limitForBack2BackRet;
 LimitTimeGap LimitTimeGap::limitForBetweenBackRet;
 __int64 LimitTimeGap::limitValueBackRet2Front = -1;
+__int64 LimitTimeGap::limitValueBack2Front = -1;
 __int64 LimitTimeGap::limitValueBetweenFront = -1;
 __int64 LimitTimeGap::limitValueBack2BackRet = -1;
 __int64 LimitTimeGap::limitValueBetweenBackRet = -1;
 int LimitTimeGap::limitValueBackRet2FrontCache = 0;
+int LimitTimeGap::limitValueBack2FrontCache = 0;
 int LimitTimeGap::limitValueBetweenFrontCache = 0;
 int LimitTimeGap::limitValueBack2BackRetCache = 0;
 int LimitTimeGap::limitValueBetweenBackRetCache = 0;
@@ -3075,6 +3078,10 @@ void LimitTimeGap::onPresentFront() {
   limitForBackRet2Front.waitForGapULK(
     limitValueBackRet2Front, false,
     limitValueNonBusyPeriod, limitValueBusyWaitTrig);
+  //this forces time gap between 'swap' to be greater than value.
+  limitForBack2Front.waitForGapULK(
+    limitValueBack2Front, false,
+    limitValueNonBusyPeriod, limitValueBusyWaitTrig);
   //this forces time gap between 'present' to be greater than value.
   limitForBetweenFront.waitForGapULK(
     limitValueBetweenFront, true,
@@ -3108,6 +3115,11 @@ if (                                                                  \
     limitG_back_return_to_front,
     -1, 0, 200000);
   loadLimitTimeGapConfig(
+    limitValueBack2Front,
+    limitValueBack2FrontCache,
+    limitG_back_to_front,
+    -1, 0, 200000);
+  loadLimitTimeGapConfig(
     limitValueBetweenFront,
     limitValueBetweenFrontCache,
     limitG_between_front,
@@ -3134,6 +3146,7 @@ if (                                                                  \
     0, 0, 1000000000);
 
   limitForBack2BackRet.updateStamp();
+  limitForBack2Front.updateStampULK();
   return;
 }
 //

@@ -773,14 +773,17 @@ private:
   static __int64 tickFreq;
   static __int64 lastKnownTick;
   static LimitTimeGap limitForBackRet2Front;
+  static LimitTimeGap limitForBack2Front;
   static LimitTimeGap limitForBetweenFront;
   static LimitTimeGap limitForBack2BackRet;
   static LimitTimeGap limitForBetweenBackRet;
   static __int64 limitValueBackRet2Front;
+  static __int64 limitValueBack2Front;
   static __int64 limitValueBetweenFront;
   static __int64 limitValueBack2BackRet;
   static __int64 limitValueBetweenBackRet;
   static int limitValueBackRet2FrontCache;
+  static int limitValueBack2FrontCache;
   static int limitValueBetweenFrontCache;
   static int limitValueBack2BackRetCache;
   static int limitValueBetweenBackRetCache;

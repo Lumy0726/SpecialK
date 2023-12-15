@@ -759,6 +759,7 @@ struct {
     sk::ParameterBool*    enable_etw_tracing      = nullptr;
     sk::ParameterBool*    use_amd_mwaitx          = nullptr;
     sk::ParameterInt*     limitG_back_return_to_front  = nullptr;
+    sk::ParameterInt*     limitG_back_to_front         = nullptr;
     sk::ParameterInt*     limitG_between_front         = nullptr;
     sk::ParameterInt*     limitG_back_to_back_return   = nullptr;
     sk::ParameterInt*     limitG_between_back_return   = nullptr;
@@ -1620,6 +1621,7 @@ auto DeclKeybind =
     ConfigEntry (render.framerate.use_amd_mwaitx,        L"Use AMD Power-Saving Instructions for Busy-Wait",           dll_ini,         L"Render.FrameRate",      L"UseAMDMWAITX"),
 
     ConfigEntry(render.framerate.limitG_back_return_to_front, L"(BackRetToFront >= limitGap), rough rendering time.",                   dll_ini, L"Render.FrameRate", L"BackRetToFront"),
+    ConfigEntry(render.framerate.limitG_back_to_front,        L"(BackToFront >= limitGap), swap gap limit, delay swap.",                dll_ini, L"Render.FrameRate", L"BackToFront"),
     ConfigEntry(render.framerate.limitG_between_front,        L"(BetweenFront >= limitGap), strict framerate limit, delay swap.",       dll_ini, L"Render.FrameRate", L"BetweenFront"),
     ConfigEntry(render.framerate.limitG_back_to_back_return,  L"(BackToBackRet >= limitGap), delays next rendering startup.",           dll_ini, L"Render.FrameRate", L"BackToBackRet"),
     ConfigEntry(render.framerate.limitG_between_back_return,  L"(BetweenBackRet >= limitGap), strict framerate limit.",                 dll_ini, L"Render.FrameRate", L"BetweenBackRet"),
@@ -3531,6 +3533,7 @@ auto DeclKeybind =
   render.framerate.use_amd_mwaitx->load     (config.render.framerate.use_amd_mwaitx);
 
   render.framerate.limitG_back_return_to_front->load   (config.render.framerate.limitG_back_return_to_front);
+  render.framerate.limitG_back_to_front->load          (config.render.framerate.limitG_back_to_front);
   render.framerate.limitG_between_front->load          (config.render.framerate.limitG_between_front);
   render.framerate.limitG_back_to_back_return->load    (config.render.framerate.limitG_back_to_back_return);
   render.framerate.limitG_between_back_return->load    (config.render.framerate.limitG_between_back_return);
@@ -5375,6 +5378,7 @@ SK_SaveConfig ( std::wstring name,
   render.framerate.use_amd_mwaitx->store      (config.render.framerate.use_amd_mwaitx);
 
   render.framerate.limitG_back_return_to_front->store   (config.render.framerate.limitG_back_return_to_front);
+  render.framerate.limitG_back_to_front->store          (config.render.framerate.limitG_back_to_front);
   render.framerate.limitG_between_front->store          (config.render.framerate.limitG_between_front);
   render.framerate.limitG_back_to_back_return->store    (config.render.framerate.limitG_back_to_back_return);
   render.framerate.limitG_between_back_return->store    (config.render.framerate.limitG_between_back_return);
