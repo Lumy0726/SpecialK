@@ -2889,10 +2889,22 @@ SK_Framerate_EnergyControlPanel (void)
 bool LimitTimeGap::isQPCValid = false;
 __int64 LimitTimeGap::tickFreq = 1;
 __int64 LimitTimeGap::lastKnownTick = 0;
-LimitTimeGap LimitTimeGap::limitForPresentFrontGap;
-LimitTimeGap LimitTimeGap::limitForPresentBackGap;
-LimitTimeGap LimitTimeGap::limitForBackWait;
-LimitTimeGap LimitTimeGap::limitForBack2Front;
+LimitTimeGap LimitTimeGap::limitForBackRet2Front;
+LimitTimeGap LimitTimeGap::limitForBetweenFront;
+LimitTimeGap LimitTimeGap::limitForBack2BackRet;
+LimitTimeGap LimitTimeGap::limitForBetweenBackRet;
+__int64 LimitTimeGap::limitValueBackRet2Front = -1;
+__int64 LimitTimeGap::limitValueBetweenFront = -1;
+__int64 LimitTimeGap::limitValueBack2BackRet = -1;
+__int64 LimitTimeGap::limitValueBetweenBackRet = -1;
+int LimitTimeGap::limitValueBackRet2FrontCache = 0;
+int LimitTimeGap::limitValueBetweenFrontCache = 0;
+int LimitTimeGap::limitValueBack2BackRetCache = 0;
+int LimitTimeGap::limitValueBetweenBackRetCache = 0;
+__int64 LimitTimeGap::limitValueNonBusyPeriod = 1000;
+__int64 LimitTimeGap::limitValueBusyWaitTrig = 2000;
+int LimitTimeGap::limitValueNonBusyPeriodCache = 1000;
+int LimitTimeGap::limitValueBusyWaitTrigCache = 2000;
 
 
 //-------------------------
@@ -2930,8 +2942,8 @@ __int64 LimitTimeGap::updateStampULK() {
 __int64 LimitTimeGap::waitForGap(
   __int64 usec,
   bool updateStamp,
-  __int64 busyWaitTrigT,
-  __int64 nonBusyWaitT
+  __int64 nonBusyWaitP,
+  __int64 busyWaitTrigT
 ) {
   if (!(inited()) || usec < static_cast<__int64>(0)) { return static_cast<__int64>(0); }
   __int64 curTick = getTick();
@@ -2950,7 +2962,7 @@ __int64 LimitTimeGap::waitForGap(
     if (usec - curUsec >= busyWaitTrigT) {
       //CASE OF: remained time is more than 'busyWaitTrigT' microsec.
       //Sleep 'nonBusyWaitT' microsec (C++ chrono).
-      std::this_thread::sleep_for(std::chrono::microseconds(nonBusyWaitT));
+      std::this_thread::sleep_for(std::chrono::microseconds(nonBusyWaitP));
     }
     //*
     else {
@@ -2968,8 +2980,8 @@ __int64 LimitTimeGap::waitForGap(
 __int64 LimitTimeGap::waitForGapULK(
   __int64 usec,
   bool updateStamp,
-  __int64 busyWaitTrigT,
-  __int64 nonBusyWaitT
+  __int64 nonBusyWaitP,
+  __int64 busyWaitTrigT
 ) {
   if (!(inited()) || usec < static_cast<__int64>(0)) { return static_cast<__int64>(0); }
   __int64 curTick = getLastKnownTick();
@@ -2988,7 +3000,7 @@ __int64 LimitTimeGap::waitForGapULK(
     if (usec - curUsec >= busyWaitTrigT) {
       //CASE OF: remained time is more than 'busyWaitTrigT' microsec.
       //Sleep 'nonBusyWaitT' microsec (C++ chrono).
-      std::this_thread::sleep_for(std::chrono::microseconds(nonBusyWaitT));
+      std::this_thread::sleep_for(std::chrono::microseconds(nonBusyWaitP));
     }
     //*
     else {
@@ -3053,19 +3065,79 @@ int LimitTimeGap::uSec2mSec(__int64 input) {
 void LimitTimeGap::onPresentFront() {
   getTick();
   //this forces rough rendering time to be greater than value.
-  limitForBack2Front.waitForGapULK(4000, false);
+  limitForBackRet2Front.waitForGapULK(
+    limitValueBackRet2Front, false,
+    limitValueNonBusyPeriod, limitValueBusyWaitTrig);
   //this forces time gap between 'present' to be greater than value.
-  limitForPresentFrontGap.waitForGapULK(-1, true);
+  limitForBetweenFront.waitForGapULK(
+    limitValueBetweenFront, true,
+    limitValueNonBusyPeriod, limitValueBusyWaitTrig);
   return;
 }
 //
 void LimitTimeGap::onPresentBack() {
+#define loadLimitTimeGapConfig(value, cacheValue, configValue, MINV, MINV_ASSIGN, MAXV)  \
+if (                                                                  \
+  cacheValue !=                                                       \
+  config.render.framerate.configValue                                 \
+) {                                                                   \
+  cacheValue =                                                        \
+    config.render.framerate.configValue;                              \
+  value = static_cast<__int64>(cacheValue);                           \
+  if (value <= static_cast<__int64>(MINV)) {                          \
+    value = static_cast<__int64>(MINV_ASSIGN);                        \
+  }                                                                   \
+  else if (value > static_cast<__int64>(MAXV)) {                      \
+    value = static_cast<__int64>(MAXV);                               \
+  }                                                                   \
+}                                                                    //
+
+  loadLimitTimeGapConfig(
+    limitValueBackRet2Front,
+    limitValueBackRet2FrontCache,
+    limitG_back_return_to_front,
+    -1, 0, 200000);
+  loadLimitTimeGapConfig(
+    limitValueBetweenFront,
+    limitValueBetweenFrontCache,
+    limitG_between_front,
+    -1, 0, 200000);
+  loadLimitTimeGapConfig(
+    limitValueBack2BackRet,
+    limitValueBack2BackRetCache,
+    limitG_back_to_back_return,
+    -1, 0, 200000);
+  loadLimitTimeGapConfig(
+    limitValueBetweenBackRet,
+    limitValueBetweenBackRetCache,
+    limitG_between_back_return,
+    -1, 0, 200000);
+  loadLimitTimeGapConfig(
+    limitValueNonBusyPeriod,
+    limitValueNonBusyPeriodCache,
+    limitG_non_busy_period,
+    0, 0, 200000);
+  loadLimitTimeGapConfig(
+    limitValueBusyWaitTrig,
+    limitValueBusyWaitTrigCache,
+    limitG_busy_wait_trig_time,
+    0, 0, 1000000000);
+
+  limitForBack2BackRet.updateStamp();
+  return;
+}
+//
+void LimitTimeGap::onPresentBackReturn() {
+  getTick();
   //this delays next rendering startup.
-  limitForBackWait.updateStamp();
-  limitForBackWait.waitForGapULK(4333, false);
+  limitForBack2BackRet.waitForGapULK(
+    limitValueBack2BackRet, false,
+    limitValueNonBusyPeriod, limitValueBusyWaitTrig);
   //this forces rough time gap between 'rendering start',
   //  to be greater than value.
-  limitForPresentBackGap.waitForGapULK(-1, true);
-  limitForBack2Front.updateStampULK();
+  limitForBetweenBackRet.waitForGapULK(
+    limitValueBetweenBackRet, true,
+    limitValueNonBusyPeriod, limitValueBusyWaitTrig);
+  limitForBackRet2Front.updateStampULK();
   return;
 }
