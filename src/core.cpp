@@ -3107,6 +3107,7 @@ void
 __stdcall
 SK_BeginBufferSwapEx (BOOL bWaitOnFail)
 {
+  LimitTimeGap::onPresentFrontCall();
   if (config.render.framerate.enable_mmcss)
   {
     SK_MMCS_BeginBufferSwap ();

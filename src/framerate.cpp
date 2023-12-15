@@ -2905,6 +2905,7 @@ __int64 LimitTimeGap::limitValueNonBusyPeriod = 1000;
 __int64 LimitTimeGap::limitValueBusyWaitTrig = 2000;
 int LimitTimeGap::limitValueNonBusyPeriodCache = 1000;
 int LimitTimeGap::limitValueBusyWaitTrigCache = 2000;
+int LimitTimeGap::presentStatusFlag = 0;
 
 
 //-------------------------
@@ -3062,7 +3063,13 @@ int LimitTimeGap::uSec2mSec(__int64 input) {
   return static_cast<int>(input / static_cast<__int64>(1000));
 }
 //
+void LimitTimeGap::onPresentFrontCall() {
+  presentStatusFlag = 1;
+}
 void LimitTimeGap::onPresentFront() {
+  if (presentStatusFlag != 1) { return; }
+  presentStatusFlag = 2;
+
   getTick();
   //this forces rough rendering time to be greater than value.
   limitForBackRet2Front.waitForGapULK(
@@ -3076,6 +3083,9 @@ void LimitTimeGap::onPresentFront() {
 }
 //
 void LimitTimeGap::onPresentBack() {
+  if (presentStatusFlag != 2) { return; }
+  presentStatusFlag = 3;
+
 #define loadLimitTimeGapConfig(value, cacheValue, configValue, MINV, MINV_ASSIGN, MAXV)  \
 if (                                                                  \
   cacheValue !=                                                       \
@@ -3128,6 +3138,9 @@ if (                                                                  \
 }
 //
 void LimitTimeGap::onPresentBackReturn() {
+  if (presentStatusFlag != 3) { return; }
+  presentStatusFlag = 0;
+
   getTick();
   //this delays next rendering startup.
   limitForBack2BackRet.waitForGapULK(
