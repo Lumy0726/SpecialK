@@ -788,6 +788,7 @@ private:
   static __int64 limitValueBusyWaitTrig;
   static int limitValueNonBusyPeriodCache;
   static int limitValueBusyWaitTrigCache;
+  static int presentStatusFlag;
 
 
 
@@ -858,6 +859,7 @@ public:
   static __int64 mSec2uSec(int input);
   static int uSec2mSec(__int64 input);
 
+  static void onPresentFrontCall();
   static void onPresentFront();
   static void onPresentBack();
   static void onPresentBackReturn();
