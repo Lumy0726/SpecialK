@@ -772,10 +772,23 @@ private:
   static bool isQPCValid;
   static __int64 tickFreq;
   static __int64 lastKnownTick;
-  static LimitTimeGap limitForPresentFrontGap;
-  static LimitTimeGap limitForPresentBackGap;
-  static LimitTimeGap limitForBackWait;
-  static LimitTimeGap limitForBack2Front;
+  static LimitTimeGap limitForBackRet2Front;
+  static LimitTimeGap limitForBetweenFront;
+  static LimitTimeGap limitForBack2BackRet;
+  static LimitTimeGap limitForBetweenBackRet;
+  static __int64 limitValueBackRet2Front;
+  static __int64 limitValueBetweenFront;
+  static __int64 limitValueBack2BackRet;
+  static __int64 limitValueBetweenBackRet;
+  static int limitValueBackRet2FrontCache;
+  static int limitValueBetweenFrontCache;
+  static int limitValueBack2BackRetCache;
+  static int limitValueBetweenBackRetCache;
+  static __int64 limitValueNonBusyPeriod;
+  static __int64 limitValueBusyWaitTrig;
+  static int limitValueNonBusyPeriodCache;
+  static int limitValueBusyWaitTrigCache;
+
 
 
   //-------------------------
@@ -821,16 +834,16 @@ public:
   virtual __int64 waitForGap(
     __int64 usec,
     bool updateStamp,
-    __int64 busyWaitTrigT = static_cast<__int64>(2000),
-    __int64 nonBusyWaitT = static_cast<__int64>(1000)
+    __int64 nonBusyWaitP = static_cast<__int64>(1000),
+    __int64 busyWaitTrigT = static_cast<__int64>(2000)
   );
   //'waitForGap' - wait until time value becomes (stamp tick + 'usec').
   //  This use 'kastKnownTick' for the first time when getting time value.
   virtual __int64 waitForGapULK(
     __int64 usec,
     bool updateStamp,
-    __int64 busyWaitTrigT = static_cast<__int64>(2000),
-    __int64 nonBusyWaitT = static_cast<__int64>(1000)
+    __int64 nonBusyWaitP = static_cast<__int64>(1000),
+    __int64 busyWaitTrigT = static_cast<__int64>(2000)
   );
 
   //-------------------------
@@ -847,6 +860,7 @@ public:
 
   static void onPresentFront();
   static void onPresentBack();
+  static void onPresentBackReturn();
 };
 
 

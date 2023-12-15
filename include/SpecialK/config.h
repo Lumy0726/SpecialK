@@ -632,6 +632,12 @@ struct sk_config_t
         bool finish_after_present  = true;
       } latent_sync;
       bool    use_amd_mwaitx       = true;
+      int     limitG_back_return_to_front          = 0;
+      int     limitG_between_front                 = 0;
+      int     limitG_back_to_back_return           = 0;
+      int     limitG_between_back_return           = 0;
+      int     limitG_non_busy_period               = 1000;
+      int     limitG_busy_wait_trig_time           = 2000;
     } framerate;
     struct d3d9_s {
       bool    force_d3d9ex         = false;

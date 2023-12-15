@@ -3862,6 +3862,8 @@ SK_EndBufferSwap (HRESULT hr, IUnknown* device, SK_TLS* pTLS)
   void SK_ImGui_DrawGraph_Latency (bool predraw);
        SK_ImGui_DrawGraph_Latency (true);
 
+
+  LimitTimeGap::onPresentBackReturn();
   return hr;
 }
 
