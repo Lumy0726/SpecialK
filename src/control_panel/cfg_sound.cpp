@@ -46,6 +46,12 @@ SK_WASAPI_GetAudioSession (void)
   return                         audio_session;
 }
 
+void
+SK_WASAPI_ResetSessionManager (void)
+{
+  SK_WASAPI_GetSessionManager ().signalReset ();
+}
+
 #define sessions      SK_WASAPI_GetSessionManager ()
 #define audio_session SK_WASAPI_GetAudioSession   ()
 
@@ -62,30 +68,50 @@ SK_ImGui_SelectAudioSessionDlg (void)
   static const float fMinX = 400.0f;
   static const float fMinY = 150.0f;
 
-  ImGui::SetNextWindowSizeConstraints ( ImVec2 (fMinX, fMinY),
-                                        ImVec2 (std::max (io.DisplaySize.x * 0.75f, fMinX),
-                                                std::max (io.DisplaySize.y * 0.666f,fMinY)) );
+  float max_width = 0.0f;
+
+  int sel_idx = -1;
+  int count   =  0;
+
+  SK_WASAPI_AudioSession **pSessions = nullptr;
+
+  if (ImGui::IsPopupOpen ("Audio Session Selector"))
+  {
+    max_width =
+      ImGui::CalcTextSize ("Audio Session Selector").x;
+
+    pSessions =
+      sessions.getActive (&count);
+
+    std::set <DWORD> unique_processes;
+
+    for ( auto i = 0 ; i < count ; ++i )
+    {
+      if ( unique_processes.emplace (
+             pSessions [i]->getProcessId ()
+           ).second )
+      {
+        const ImVec2 size =
+          ImGui::CalcTextSize (pSessions [i]->getName ());
+
+        if (size.x > max_width) max_width = size.x;
+      }
+    }
+
+    ImGui::SetNextWindowSizeConstraints ( ImVec2 (
+                                        std::max (fMinX * io.FontGlobalScale, max_width * 2.1f * io.FontGlobalScale +
+                                                       ImGui::GetStyle ().ItemSpacing.x * io.FontGlobalScale * 5.0f),
+                                        std::max (fMinY * io.FontGlobalScale, (unique_processes.size () + 3.0f) * 
+                 ImGui::GetTextLineHeightWithSpacing () * io.FontGlobalScale +
+                                                       ImGui::GetStyle ().ItemSpacing.y * io.FontGlobalScale * 13.0f)),
+                                          ImVec2 (std::max (io.DisplaySize.x * 0.75f, fMinX),
+                                                  std::max (io.DisplaySize.y * 0.666f,fMinY)) );
+  }
 
   if (ImGui::BeginPopupModal ("Audio Session Selector", nullptr, ImGuiWindowFlags_AlwaysAutoResize |
                                                                  ImGuiWindowFlags_NoScrollbar      | ImGuiWindowFlags_NoScrollWithMouse))
   {
-    int sel_idx = -1;
-    int count   = 0;
-
-    SK_WASAPI_AudioSession** pSessions =
-      sessions.getActive (&count);
-
-    float max_width =
-      ImGui::CalcTextSize ("Audio Session Selector").x;
-
-    for (int i = 0; i < count; i++)
-    {
-      const ImVec2 size =
-        ImGui::CalcTextSize (pSessions [i]->getName ());
-
-      if (size.x > max_width) max_width = size.x;
-    }
-    ImGui::PushItemWidth (max_width * 5.0f * io.FontGlobalScale);
+    ImGui::PushItemWidth (max_width * io.FontGlobalScale);
 
     ImGui::BeginChild ("SessionSelectHeader",   ImVec2 (0, 0), true,  ImGuiWindowFlags_NavFlattened | ImGuiWindowFlags_NoInputs |
                                                                       ImGuiWindowFlags_NoNavInputs);
@@ -108,10 +134,19 @@ SK_ImGui_SelectAudioSessionDlg (void)
       ImGui::BeginGroup ();//"SessionSelectData");
       ImGui::Columns    (2);
 
+      std::set <DWORD> sessions_listed;
+
       for (int i = 0; i < count; i++)
       {
         SK_WASAPI_AudioSession* pSession =
           pSessions [i];
+
+        auto pChannelVolume =
+          pSession->getChannelAudioVolume ();
+
+        // No duplicates please
+        if (pChannelVolume == nullptr || (pSession->isActive () && (! sessions_listed.emplace (pSession->getProcessId ()).second)))
+          continue;
 
         //bool selected     = false;
         const bool drawing_self =
@@ -198,7 +233,22 @@ SK_ImGui_SelectAudioSessionDlg (void)
       }
     }
 
+    // If there's nothing to select, then bail-out
     if (count == 0)
+      ImGui::CloseCurrentPopup ();
+
+    const ImRect window_rect
+      ( ImGui::GetWindowPos (),
+        ImGui::GetWindowPos () + ImGui::GetWindowSize () );
+
+    const bool bEscape   = ImGui::IsKeyDown           ( ImGuiKey_Escape );
+    const bool bClicked  = ImGui::IsAnyMouseDown      (                 ) && !ImGui::IsMouseDragging (ImGuiMouseButton_Left);
+    const bool bHovering = ImGui::IsMouseHoveringRect ( window_rect.Min,
+                                                        window_rect.Max );
+
+    // Close the popup if user clicks outside of it, this behavior is
+    //   more intuitive than ImGui's normal modal popup behavior.
+    if (bEscape || (bClicked && (! bHovering)))
       ImGui::CloseCurrentPopup ();
 
     ImGui::PopItemWidth ();
@@ -217,17 +267,23 @@ SK_ImGui_SelectAudioDeviceDlg (void)
   bool changed = false;
 
   static const float fMinX = 400.0f;
-  static const float fMinY = 150.0f;
+  static const float fMinY = 100.0f;
 
-  ImGui::SetNextWindowSizeConstraints ( ImVec2 (fMinX, fMinY),
-                                        ImVec2 (std::max (io.DisplaySize.x * 0.75f, fMinX),
-                                                std::max (io.DisplaySize.y * 0.666f,fMinY)) );
+  size_t count =
+    SK_WASAPI_EndPointMgr->getNumRenderEndpoints ();
+
+  if (ImGui::IsPopupOpen ("Audio Device Selector"))
+  {
+    ImGui::SetNextWindowSizeConstraints ( ImVec2 (fMinX * io.FontGlobalScale,
+                                        std::max (fMinY * io.FontGlobalScale,
+         count * ImGui::GetTextLineHeightWithSpacing () * io.FontGlobalScale)),
+                                          ImVec2 (std::max (io.DisplaySize.x * 0.75f, fMinX),
+                                                  std::max (io.DisplaySize.y * 0.666f,fMinY)) );
+  }
 
   if (ImGui::BeginPopupModal ("Audio Device Selector", nullptr, ImGuiWindowFlags_AlwaysAutoResize |
                                                                 ImGuiWindowFlags_NoScrollbar      | ImGuiWindowFlags_NoScrollWithMouse))
   {
-    size_t count = SK_WASAPI_EndPointMgr->getNumRenderEndpoints ();
-
     std::wstring endpoint_id =
       SK_WASAPI_EndPointMgr->getPersistedDefaultAudioEndpoint (
         audio_session->getProcessId (), eRender
@@ -238,19 +294,18 @@ SK_ImGui_SelectAudioDeviceDlg (void)
       auto& device =
         SK_WASAPI_EndPointMgr->getRenderEndpoint (i);
 
-      if (device.endpoint_state_ == DEVICE_STATE_ACTIVE)
+      if (device.state_ == DEVICE_STATE_ACTIVE)
       {
         bool selected =
-          device.endpoint_id_._Equal (endpoint_id);
+          device.isSameDevice (endpoint_id.c_str ());
 
-        if (ImGui::Selectable (device.friendly_name_.c_str (), selected))
+        if (ImGui::Selectable (device.name_.c_str (), selected))
         {
           SK_WASAPI_EndPointMgr->setPersistedDefaultAudioEndpoint (
-            audio_session->getProcessId (), eRender, device.endpoint_id_
+            audio_session->getProcessId (), eRender, device.id_
           );
 
-          sessions.Deactivate ();
-          sessions.Activate   ();
+          sessions.signalReset ();
 
           ImGui::CloseCurrentPopup ();
 
@@ -261,10 +316,25 @@ SK_ImGui_SelectAudioDeviceDlg (void)
       }
     }
 
+    // If there's nothing to select, then bail-out
     if (count == 0)
       ImGui::CloseCurrentPopup ();
 
-    ImGui::EndPopup     ();
+    const ImRect window_rect
+      ( ImGui::GetWindowPos (),
+        ImGui::GetWindowPos () + ImGui::GetWindowSize () );
+
+    const bool bEscape   = ImGui::IsKeyDown           ( ImGuiKey_Escape );
+    const bool bClicked  = ImGui::IsAnyMouseDown      (                 ) && !ImGui::IsMouseDragging (ImGuiMouseButton_Left);
+    const bool bHovering = ImGui::IsMouseHoveringRect ( window_rect.Min,
+                                                        window_rect.Max );
+
+    // Close the popup if user clicks outside of it, this behavior is
+    //   more intuitive than ImGui's normal modal popup behavior.
+    if (bEscape || (bClicked && (! bHovering)))
+      ImGui::CloseCurrentPopup ();
+
+    ImGui::EndPopup ();
   }
 
   return changed;
@@ -358,13 +428,53 @@ SK_ImGui_VolumeManager (void)
   sessions.Activate ();
 
   SK_ComPtr <IAudioMeterInformation> pMeterInfo =
-    sessions.getMeterInfo ();
+    audio_session != nullptr ? audio_session->getMeterInfo ()
+                             :       sessions.getMeterInfo ();
 
   if (pMeterInfo == nullptr)
     audio_session = nullptr;
 
   if (audio_session != nullptr)
+  {
+    const DWORD dwSessionPid =
+      audio_session->getProcessId ();
+
+    // Select a different session from the same process if the selected session is
+    //   not currently active...
+    if (! audio_session->isActive ())
+    {
+      int session_count = 0;
+
+      auto** ppSessions =
+        sessions.getActive (&session_count);
+
+      for (int i = 0; i < session_count ; ++i)
+      {
+        if (ppSessions [i] == nullptr)
+          continue;
+
+        if ( ppSessions [i]->getProcessId () != dwSessionPid ||
+             ppSessions [i]->isActive     () == false )
+          continue;
+
+        audio_session = ppSessions [i];
+        break;
+      }
+    }
+
+    float fLevelDB = 0.0f;
+
+    auto pEndpointVolume =
+      audio_session->getEndpointVolume ();
+
+    if ( pEndpointVolume == nullptr || FAILED (
+           pEndpointVolume->GetMasterVolumeLevel (&fLevelDB)) )
+    {
+      sessions.signalReset ();
+      return;
+    }
     app_name = audio_session->getName ();
+  }
 
   app_name += "##AudioSessionAppName";
 
@@ -552,7 +662,8 @@ SK_ImGui_VolumeManager (void)
     // Find the session for the current game and select that first...
     for (int i = 0; i < count; i++)
     {
-      if (ppSessions [i]->getProcessId () == GetCurrentProcessId ())
+      if (ppSessions [i]->getProcessId () == GetCurrentProcessId () &&
+          ppSessions [i]->isActive ())
       {
         dwLastTest    = 0;
         channels      = 0;
@@ -564,6 +675,9 @@ SK_ImGui_VolumeManager (void)
 
   if (audio_session != nullptr)
   {
+    if (pMeterInfo == nullptr)
+        pMeterInfo = audio_session->getMeterInfo ();
+
     if (pMeterInfo == nullptr)
         pMeterInfo = sessions.getMeterInfo ();
 
@@ -636,18 +750,19 @@ SK_ImGui_VolumeManager (void)
       pVolume->GetMasterVolume (&master_vol);
       pVolume->GetMute         (&master_mute);
 
-
       static std::string label = "Switch Audio Device";
 
       SK_ImGui_SelectAudioDeviceDlg ();
 
-      if (ImGui::Button (label.c_str ()))
+      if (SK_WASAPI_EndPointMgr->getNumRenderEndpoints (DEVICE_STATE_ACTIVE) > 1)
       {
-        ImGui::OpenPopup ("Audio Device Selector");
+        if (ImGui::Button (label.c_str ()))
+        {
+          ImGui::OpenPopup ("Audio Device Selector");
+        }
+
+        ImGui::SameLine ();
       }
-
-      ImGui::SameLine ();
-
 
       IAudioEndpointVolume* pEndVol =
         audio_session->getEndpointVolume ();

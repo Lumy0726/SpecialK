@@ -1372,7 +1372,8 @@ D3D12GraphicsCommandList_DrawInstanced_Detour (
 
       if (SUCCEEDED (This->GetPrivateData (SKID_D3D12RenderTarget0, &size, &rtv_handle)) && rtv_handle.ptr != 0)
       {
-        SK_ReShadeAddOn_RenderEffectsD3D12 ((IDXGISwapChain1 *)SK_GetCurrentRenderBackend ().swapchain.p, nullptr, nullptr, rtv_handle);
+        // This currently doesn't work with sRGB
+        SK_ReShadeAddOn_RenderEffectsD3D12 ((IDXGISwapChain1 *)SK_GetCurrentRenderBackend ().swapchain.p, nullptr, nullptr, rtv_handle, { 0 });
       }
 
       //return;
@@ -1422,7 +1423,8 @@ D3D12GraphicsCommandList_DrawIndexedInstanced_Detour (
 
       if (SUCCEEDED (This->GetPrivateData (SKID_D3D12RenderTarget0, &size, &rtv_handle)) && rtv_handle.ptr != 0)
       {
-        SK_ReShadeAddOn_RenderEffectsD3D12 ((IDXGISwapChain1 *)SK_GetCurrentRenderBackend ().swapchain.p, nullptr, nullptr, rtv_handle);
+        // This currently doesn't work with sRGB
+        SK_ReShadeAddOn_RenderEffectsD3D12 ((IDXGISwapChain1 *)SK_GetCurrentRenderBackend ().swapchain.p, nullptr, nullptr, rtv_handle, { 0 });
       }
 
       //return;
@@ -1460,7 +1462,8 @@ D3D12GraphicsCommandList_ExecuteIndirect_Detour (
 
       if (SUCCEEDED (This->GetPrivateData (SKID_D3D12RenderTarget0, &size, &rtv_handle)) && rtv_handle.ptr != 0)
       {
-        SK_ReShadeAddOn_RenderEffectsD3D12 ((IDXGISwapChain1 *)SK_GetCurrentRenderBackend ().swapchain.p, nullptr, nullptr, rtv_handle);
+        // This currently doesn't work with sRGB
+        SK_ReShadeAddOn_RenderEffectsD3D12 ((IDXGISwapChain1 *)SK_GetCurrentRenderBackend ().swapchain.p, nullptr, nullptr, rtv_handle, { 0 });
       }
 
       //return;
@@ -2060,13 +2063,69 @@ SK_D3D12_RenderCtx::present (IDXGISwapChain3 *pSwapChain)
         }
       }
 
+      // Lazy final-initialization of ReShade for AddOn support
+      //
+      if (stagingFrame.hReShadeOutput.ptr == 0 && _pReShadeRuntime != nullptr)
+      {
+        reshade::api::resource_view rtv;
+        reshade::api::resource_view rtv_srgb;
+
+        if (DirectX::IsSRGB (stagingFrame.pRenderOutput->GetDesc ().Format))
+        {
+          SK_ReleaseAssert (! L"sRGB Render Targets unsupported in D3D12");
+
+          _pReShadeRuntime->get_device ()->create_resource_view (
+            reshade::api::resource { (uint64_t)stagingFrame.pRenderOutput.p },
+            reshade::api::resource_usage::render_target,
+            reshade::api::resource_view_desc ((reshade::api::format)stagingFrame.pRenderOutput->GetDesc ().Format),
+                                     &rtv
+          );
+
+          _pDevice->CopyDescriptorsSimple (
+            1, stagingFrame.hRenderOutput,   (D3D12_CPU_DESCRIPTOR_HANDLE)(size_t)rtv.handle, D3D12_DESCRIPTOR_HEAP_TYPE_RTV );
+               stagingFrame.hReShadeOutput = (D3D12_CPU_DESCRIPTOR_HANDLE)(size_t)rtv.handle;
+        }
+
+        else
+        {
+          _pReShadeRuntime->get_device ()->create_resource_view (
+            reshade::api::resource { (uint64_t)stagingFrame.pRenderOutput.p },
+            reshade::api::resource_usage::render_target,
+            reshade::api::resource_view_desc ((reshade::api::format)stagingFrame.pRenderOutput->GetDesc ().Format),
+                                     &rtv
+          );
+
+          _pDevice->CopyDescriptorsSimple (
+            1, stagingFrame.hRenderOutput,   (D3D12_CPU_DESCRIPTOR_HANDLE)(size_t)rtv.handle, D3D12_DESCRIPTOR_HEAP_TYPE_RTV );
+               stagingFrame.hReShadeOutput = (D3D12_CPU_DESCRIPTOR_HANDLE)(size_t)rtv.handle;
+
+           DXGI_FORMAT srgb_format =
+             DirectX::MakeSRGB (stagingFrame.pRenderOutput->GetDesc ().Format);
+
+          if (DirectX::IsSRGB (srgb_format))
+          {
+            _pReShadeRuntime->get_device ()->create_resource_view (
+              reshade::api::resource { (uint64_t)stagingFrame.pRenderOutput.p },
+              reshade::api::resource_usage::render_target,
+              reshade::api::resource_view_desc ((reshade::api::format)srgb_format),
+                                       &rtv_srgb
+            );
+
+            _pDevice->CopyDescriptorsSimple (
+              1, stagingFrame.hRenderOutputsRGB,   (D3D12_CPU_DESCRIPTOR_HANDLE)(size_t)rtv_srgb.handle, D3D12_DESCRIPTOR_HEAP_TYPE_RTV );
+                 stagingFrame.hReShadeOutputsRGB = (D3D12_CPU_DESCRIPTOR_HANDLE)(size_t)rtv_srgb.handle;
+          }
+        }
+      }
+
       UINT64 uiFenceVal = 0;
 
       SK_ComQIPtr <IDXGISwapChain1>          pSwapChain1 (_pSwapChain);
       uiFenceVal =
         SK_ReShadeAddOn_RenderEffectsD3D12 ( pSwapChain1.p, stagingFrame.pRenderOutput,
                                                             stagingFrame.reshade_fence,
-                                                            stagingFrame.hReShadeOutput );//hRenderOutput );
+                                                            stagingFrame.hReShadeOutput,
+                                                            stagingFrame.hReShadeOutputsRGB );//hRenderOutput );
 
       if (uiFenceVal != 0)
       {
@@ -2208,6 +2267,24 @@ SK_D3D12_RenderCtx::present (IDXGISwapChain3 *pSwapChain)
       _pReShadeRuntime =
         SK_ReShadeAddOn_CreateEffectRuntime_D3D12 (_pDevice, _pCommandQueue, _pSwapChain);
     }
+  }
+
+  if (InterlockedCompareExchange (&reset_needed, 0, 1) == 1)
+  {
+    if (stagingFrame.wait_for_gpu ())
+    {
+      release (pSwapChain);
+
+      if (nullptr != _pReShadeRuntime)
+      {
+        SK_ReShadeAddOn_DestroyEffectRuntime (
+          std::exchange (_pReShadeRuntime, nullptr)
+        );
+      }
+    }
+
+    else
+      WriteULongRelease (&reset_needed, 1);
   }
 
   SK_RunOnce (SK_ApplyQueuedHooks ());
@@ -2588,10 +2665,12 @@ SK_D3D12_RenderCtx::init (IDXGISwapChain3 *pSwapChain, ID3D12CommandQueue *pComm
                                        IID_PPV_ARGS (&descriptorHeaps.pHDR_CopyAssist.p)));
                               SK_D3D12_SetDebugName ( descriptorHeaps.pHDR_CopyAssist.p,
                                         L"SK D3D12 HDR Copy Descriptor Heap" );
+
+      // This heap will store Linear and sRGB views, it needs 2x SwapChain backbuffer
       ThrowIfFailed (
         _pDevice->CreateDescriptorHeap (
           std::array < D3D12_DESCRIPTOR_HEAP_DESC,                1 >
-            {          D3D12_DESCRIPTOR_HEAP_TYPE_RTV,            swapDesc1.BufferCount,
+            {          D3D12_DESCRIPTOR_HEAP_TYPE_RTV,            swapDesc1.BufferCount * 2,
                        D3D12_DESCRIPTOR_HEAP_FLAG_NONE,           0 }.data (),
                                        IID_PPV_ARGS (&descriptorHeaps.pBackBuffers.p)));
                               SK_D3D12_SetDebugName ( descriptorHeaps.pBackBuffers.p,
@@ -2650,26 +2729,22 @@ SK_D3D12_RenderCtx::init (IDXGISwapChain3 *pSwapChain, ID3D12CommandQueue *pComm
           _pSwapChain->GetBuffer (frame.iBufferIdx,                 IID_PPV_ARGS (&frame.pRenderOutput.p)));
 
         frame.hRenderOutput.ptr =
-                  rtvHandle.ptr + frame.iBufferIdx * rtvDescriptorSize;
+                  rtvHandle.ptr + (frame.iBufferIdx * 2)     * rtvDescriptorSize;
+        frame.hRenderOutputsRGB.ptr =
+                  rtvHandle.ptr + (frame.iBufferIdx * 2 + 1) * rtvDescriptorSize;
 
         //
         // Wrap this using ReShade's internal device, so that it can map the CPU descriptor back to a resource
         //   and we can use this Render Target in non-Render Hook versions of ReShade.
         //
-        if (_pReShadeRuntime != nullptr)
+        if (config.reshade.is_addon || _pReShadeRuntime != nullptr)
         {
-          reshade::api::resource_view rtv;
-
-          _pReShadeRuntime->get_device ()->create_resource_view (
-            reshade::api::resource { (uint64_t)frame.pRenderOutput.p },
-            reshade::api::resource_usage::render_target,
-            reshade::api::resource_view_desc ((reshade::api::format)frame.pRenderOutput->GetDesc ().Format),
-                                     &rtv
-          );
-
-          _pDevice->CopyDescriptorsSimple (
-            1, frame.hRenderOutput,   (D3D12_CPU_DESCRIPTOR_HANDLE)(size_t)rtv.handle, D3D12_DESCRIPTOR_HEAP_TYPE_RTV );
-               frame.hReShadeOutput = (D3D12_CPU_DESCRIPTOR_HANDLE)(size_t)rtv.handle;
+          if (config.reshade.is_addon && _pReShadeRuntime == nullptr)
+          {
+            // Lazy initialize the runtime so that we can hot-inject ReShade
+            _pReShadeRuntime =
+              SK_ReShadeAddOn_CreateEffectRuntime_D3D12 (_pDevice, _pCommandQueue, _pSwapChain);
+          }
         }
 
         // Hookless ReShade is not in use, do the normal thing.
