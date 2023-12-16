@@ -2318,6 +2318,7 @@ SK_DXGI_PresentBase ( IDXGISwapChain         *This,
                       UINT _Flags) ->
   HRESULT
   {
+    LimitTimeGap::onPresentFrontCall();
     BOOL bFullscreen =
       rb.fullscreen_exclusive;
 
@@ -2359,6 +2360,7 @@ SK_DXGI_PresentBase ( IDXGISwapChain         *This,
     //   transition, it's going to bitch about 'crashing'.
     auto _Ret = [&](HRESULT ret) -> HRESULT
     {
+      LimitTimeGap::onPresentBack();
       if ( ret == DXGI_ERROR_DEVICE_REMOVED ||
            ret == DXGI_ERROR_DEVICE_RESET )
       {
@@ -2448,6 +2450,7 @@ SK_DXGI_PresentBase ( IDXGISwapChain         *This,
     {
       if (DXGISwapChain1_Present1 != nullptr)
       {
+        LimitTimeGap::onPresentFront();
         return
           _Ret (
             DXGISwapChain1_Present1 ( (IDXGISwapChain1 *)This,
@@ -2457,6 +2460,7 @@ SK_DXGI_PresentBase ( IDXGISwapChain         *This,
           );
       }
 
+      LimitTimeGap::onPresentFront();
       return
         _Ret (
           DXGISwapChain_Present ( This,
@@ -2467,12 +2471,14 @@ SK_DXGI_PresentBase ( IDXGISwapChain         *This,
 
     if (DXGISwapChain1_Present1 != nullptr)
     {
+      LimitTimeGap::onPresentFront();
       return
         _Ret (
           ((IDXGISwapChain1 *)This)->Present1 (_SyncInterval, _Flags, pPresentParameters)
         );
     }
 
+    LimitTimeGap::onPresentFront();
     return
       _Ret (
         This->Present (_SyncInterval, _Flags)
@@ -2562,6 +2568,7 @@ SK_DXGI_PresentBase ( IDXGISwapChain         *This,
                                                        == DXGI_PRESENT_TEST )
       return S_OK;
 
+    LimitTimeGap::onPresentBackReturn();
     return
       hrPresent;
   }
@@ -2589,8 +2596,9 @@ SK_DXGI_PresentBase ( IDXGISwapChain         *This,
     SK_D3D11_EndFrame ();
     SK_D3D12_EndFrame ();
 
-    return
-      _Present ( SyncInterval, Flags );
+    HRESULT presentRet = _Present(SyncInterval, Flags);
+    LimitTimeGap::onPresentBackReturn();
+    return presentRet;
   }
 
   auto *pLimiter =
@@ -2979,7 +2987,6 @@ SK_DXGI_PresentBase ( IDXGISwapChain         *This,
       }
     }
 
-    LimitTimeGap::onPresentFront();
     HRESULT hr =
       _SkipThisFrame ? _Present ( rb.d3d11.immediate_ctx != nullptr ?
                                                                   0 : 1,
@@ -2987,7 +2994,6 @@ SK_DXGI_PresentBase ( IDXGISwapChain         *This,
                                 ( ( rb.d3d11.immediate_ctx != nullptr) ? DXGI_PRESENT_ALLOW_TEARING
                                                                        : 0 ) ) :
                        _Present ( interval, flags );
-    LimitTimeGap::onPresentBack();
 
     if (_SkipThisFrame)
       hr = S_OK;
@@ -3049,11 +3055,14 @@ SK_DXGI_PresentBase ( IDXGISwapChain         *This,
     // We have hooks in the D3D11/12 state tracker that should take care of this
     //rb.setLatencyMarkerNV (RENDERSUBMIT_START);
 
+      LimitTimeGap::onPresentBackReturn();
       return ret;
     }
 
     // Not a D3D11 device -- weird...
-    return SK_EndBufferSwap (hr);
+    HRESULT retOfEBS = SK_EndBufferSwap(hr);
+    LimitTimeGap::onPresentBackReturn();
+    return retOfEBS;
   }
 
   HRESULT hr =
@@ -3062,6 +3071,7 @@ SK_DXGI_PresentBase ( IDXGISwapChain         *This,
   config.render.osd._last_vidcap_frame =
     SK_GetFramesDrawn ();
 
+  LimitTimeGap::onPresentBackReturn();
   return hr;
 }
 

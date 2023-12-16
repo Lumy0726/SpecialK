@@ -184,6 +184,7 @@ vkQueuePresentKHR_Detour ( VkQueue           queue,
 {
   SK_BeginBufferSwap ();
 
+  LimitTimeGap::onPresentFrontCall();
   LimitTimeGap::onPresentFront();
   VkResult ret =
     SK::Vulkan::funcs.vkQueuePresentKHR ( queue,
@@ -192,6 +193,7 @@ vkQueuePresentKHR_Detour ( VkQueue           queue,
 
   SK_EndBufferSwap (S_OK);
 
+  LimitTimeGap::onPresentBackReturn();
   return ret;
 }
 
@@ -206,6 +208,7 @@ vkAcquireNextImageKHR_Detour ( VkDevice       device,
 {
   SK_BeginBufferSwap ();
 
+  LimitTimeGap::onPresentFrontCall();
   LimitTimeGap::onPresentFront();
   VkResult ret =
     SK::Vulkan::funcs.vkAcquireNextImageKHR ( device,
@@ -218,6 +221,7 @@ vkAcquireNextImageKHR_Detour ( VkDevice       device,
 
   SK_EndBufferSwap (S_OK);
 
+  LimitTimeGap::onPresentBackReturn();
   return ret;
 }
 
