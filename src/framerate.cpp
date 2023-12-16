@@ -2893,16 +2893,19 @@ LimitTimeGap LimitTimeGap::limitForBackRet2Front;
 LimitTimeGap LimitTimeGap::limitForBack2Front;
 LimitTimeGap LimitTimeGap::limitForBetweenFront;
 LimitTimeGap LimitTimeGap::limitForBack2BackRet;
+LimitTimeGap LimitTimeGap::limitForFront2BackRet;
 LimitTimeGap LimitTimeGap::limitForBetweenBackRet;
 __int64 LimitTimeGap::limitValueBackRet2Front = -1;
 __int64 LimitTimeGap::limitValueBack2Front = -1;
 __int64 LimitTimeGap::limitValueBetweenFront = -1;
 __int64 LimitTimeGap::limitValueBack2BackRet = -1;
+__int64 LimitTimeGap::limitValueFront2BackRet = -1;
 __int64 LimitTimeGap::limitValueBetweenBackRet = -1;
 int LimitTimeGap::limitValueBackRet2FrontCache = 0;
 int LimitTimeGap::limitValueBack2FrontCache = 0;
 int LimitTimeGap::limitValueBetweenFrontCache = 0;
 int LimitTimeGap::limitValueBack2BackRetCache = 0;
+int LimitTimeGap::limitValueFront2BackRetCache = 0;
 int LimitTimeGap::limitValueBetweenBackRetCache = 0;
 __int64 LimitTimeGap::limitValueNonBusyPeriod = 1000;
 __int64 LimitTimeGap::limitValueBusyWaitTrig = 2000;
@@ -3086,12 +3089,17 @@ void LimitTimeGap::onPresentFront() {
   limitForBetweenFront.waitForGapULK(
     limitValueBetweenFront, true,
     limitValueNonBusyPeriod, limitValueBusyWaitTrig);
+  //
+  limitForFront2BackRet.updateStampULK();
   return;
 }
 //
 void LimitTimeGap::onPresentBack() {
   if (presentStatusFlag != 2) { return; }
   presentStatusFlag = 3;
+  //
+  limitForBack2BackRet.updateStamp();
+  limitForBack2Front.updateStampULK();
 
 #define loadLimitTimeGapConfig(value, cacheValue, configValue, MINV, MINV_ASSIGN, MAXV)  \
 if (                                                                  \
@@ -3130,6 +3138,11 @@ if (                                                                  \
     limitG_back_to_back_return,
     -1, 0, 200000);
   loadLimitTimeGapConfig(
+    limitValueFront2BackRet,
+    limitValueFront2BackRetCache,
+    limitG_front_to_back_return,
+    -1, 0, 200000);
+  loadLimitTimeGapConfig(
     limitValueBetweenBackRet,
     limitValueBetweenBackRetCache,
     limitG_between_back_return,
@@ -3145,8 +3158,6 @@ if (                                                                  \
     limitG_busy_wait_trig_time,
     0, 0, 1000000000);
 
-  limitForBack2BackRet.updateStamp();
-  limitForBack2Front.updateStampULK();
   return;
 }
 //
@@ -3159,11 +3170,16 @@ void LimitTimeGap::onPresentBackReturn() {
   limitForBack2BackRet.waitForGapULK(
     limitValueBack2BackRet, false,
     limitValueNonBusyPeriod, limitValueBusyWaitTrig);
+  //this also delays next rendering startup.
+  limitForFront2BackRet.waitForGapULK(
+    limitValueFront2BackRet, false,
+    limitValueNonBusyPeriod, limitValueBusyWaitTrig);
   //this forces rough time gap between 'rendering start',
   //  to be greater than value.
   limitForBetweenBackRet.waitForGapULK(
     limitValueBetweenBackRet, true,
     limitValueNonBusyPeriod, limitValueBusyWaitTrig);
+  //
   limitForBackRet2Front.updateStampULK();
   return;
 }

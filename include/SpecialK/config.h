@@ -637,6 +637,7 @@ struct sk_config_t
       int     limitG_back_to_front                 = 0;
       int     limitG_between_front                 = 0;
       int     limitG_back_to_back_return           = 0;
+      int     limitG_front_to_back_return          = 0;
       int     limitG_between_back_return           = 0;
       int     limitG_non_busy_period               = 1000;
       int     limitG_busy_wait_trig_time           = 2000;

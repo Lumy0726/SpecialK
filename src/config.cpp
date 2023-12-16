@@ -762,6 +762,7 @@ struct {
     sk::ParameterInt*     limitG_back_to_front         = nullptr;
     sk::ParameterInt*     limitG_between_front         = nullptr;
     sk::ParameterInt*     limitG_back_to_back_return   = nullptr;
+    sk::ParameterInt*     limitG_front_to_back_return  = nullptr;
     sk::ParameterInt*     limitG_between_back_return   = nullptr;
     sk::ParameterInt*     limitG_non_busy_period       = nullptr;
     sk::ParameterInt*     limitG_busy_wait_trig_time   = nullptr;
@@ -1620,13 +1621,22 @@ auto DeclKeybind =
     ConfigEntry (render.framerate.enable_etw_tracing,    L"Use ETW tracing (PresentMon) for extra latency/flip info",  dll_ini,         L"Render.FrameRate",      L"EnableETWTracing"),
     ConfigEntry (render.framerate.use_amd_mwaitx,        L"Use AMD Power-Saving Instructions for Busy-Wait",           dll_ini,         L"Render.FrameRate",      L"UseAMDMWAITX"),
 
-    ConfigEntry(render.framerate.limitG_back_return_to_front, L"(BackRetToFront >= limitGap), rough rendering time.",                   dll_ini, L"Render.FrameRate", L"BackRetToFront"),
-    ConfigEntry(render.framerate.limitG_back_to_front,        L"(BackToFront >= limitGap), swap gap limit, delay swap.",                dll_ini, L"Render.FrameRate", L"BackToFront"),
-    ConfigEntry(render.framerate.limitG_between_front,        L"(BetweenFront >= limitGap), strict framerate limit, delay swap.",       dll_ini, L"Render.FrameRate", L"BetweenFront"),
-    ConfigEntry(render.framerate.limitG_back_to_back_return,  L"(BackToBackRet >= limitGap), delays next rendering startup.",           dll_ini, L"Render.FrameRate", L"BackToBackRet"),
-    ConfigEntry(render.framerate.limitG_between_back_return,  L"(BetweenBackRet >= limitGap), strict framerate limit.",                 dll_ini, L"Render.FrameRate", L"BetweenBackRet"),
-    ConfigEntry(render.framerate.limitG_non_busy_period,      L"Period for non-busy wait of 'limitGap'. (recommend 1000)",              dll_ini, L"Render.FrameRate", L"LimitGapNonBusyPeriod"),
-    ConfigEntry(render.framerate.limitG_busy_wait_trig_time,  L"Busy wait of 'limitGap' will be triggered, if (rest time < trig time)", dll_ini, L"Render.FrameRate", L"LimitGapBusyWaitTrig"),
+    ConfigEntry(render.framerate.limitG_back_return_to_front,
+      L"(BackRetToFront >= limitGap), rough rendering time, ~(CPU+GPU).",                                               dll_ini,          L"Render.FrameRate",      L"BackRetToFront"),
+    ConfigEntry(render.framerate.limitG_back_to_front,
+      L"(BackToFront >= limitGap), buffer swap gap limit, ~(BACKWAIT+CPU+GPU).",                                        dll_ini,          L"Render.FrameRate",      L"BackToFront"),
+    ConfigEntry(render.framerate.limitG_between_front,
+      L"(BetweenFront >= limitGap), strict framerate limit, before present, ~(PRESENT+BACKWAIT+CPU+GPU).",              dll_ini,          L"Render.FrameRate",      L"BetweenFront"),
+    ConfigEntry(render.framerate.limitG_back_to_back_return,
+      L"(BackToBackRet >= limitGap), delays next rendering startup, ~(BACKWAIT).",                                      dll_ini,          L"Render.FrameRate",      L"BackToBackRet"),
+    ConfigEntry(render.framerate.limitG_front_to_back_return,
+      L"(FrontToBackRet >= limitGap), delays next rendering startup, ~(PRESENT+BACKWAIT).",                             dll_ini,          L"Render.FrameRate",      L"FrontToBackRet"),
+    ConfigEntry(render.framerate.limitG_between_back_return,
+      L"(BetweenBackRet >= limitGap), strict framerate limit, ~(CPU+GPU+PRESENT+BACKWAIT).",                            dll_ini,          L"Render.FrameRate",      L"BetweenBackRet"),
+    ConfigEntry(render.framerate.limitG_non_busy_period,
+      L"Period for non-busy wait of 'limitGap'. (recommend 1000 usec)",                                                 dll_ini,          L"Render.FrameRate",      L"LimitGapNonBusyPeriod"),
+    ConfigEntry(render.framerate.limitG_busy_wait_trig_time,
+      L"Time value to trigger busy waiting, if (rest_wait_time < trigger_time)",                                        dll_ini,          L"Render.FrameRate",      L"LimitGapBusyWaitTrig"),
 
     ConfigEntry (render.framerate.control.render_ahead,  L"Maximum number of CPU-side frames to work ahead of GPU.",   dll_ini,         L"FrameRate.Control",     L"MaxRenderAheadFrames"),
     ConfigEntry (render.framerate.override_cpu_count,    L"Number of CPU cores to tell the game about",                dll_ini,         L"FrameRate.Control",     L"OverrideCPUCoreCount"),
@@ -3536,6 +3546,7 @@ auto DeclKeybind =
   render.framerate.limitG_back_to_front->load          (config.render.framerate.limitG_back_to_front);
   render.framerate.limitG_between_front->load          (config.render.framerate.limitG_between_front);
   render.framerate.limitG_back_to_back_return->load    (config.render.framerate.limitG_back_to_back_return);
+  render.framerate.limitG_front_to_back_return->load   (config.render.framerate.limitG_front_to_back_return);
   render.framerate.limitG_between_back_return->load    (config.render.framerate.limitG_between_back_return);
   render.framerate.limitG_non_busy_period->load        (config.render.framerate.limitG_non_busy_period);
   render.framerate.limitG_busy_wait_trig_time->load    (config.render.framerate.limitG_busy_wait_trig_time);
@@ -5381,6 +5392,7 @@ SK_SaveConfig ( std::wstring name,
   render.framerate.limitG_back_to_front->store          (config.render.framerate.limitG_back_to_front);
   render.framerate.limitG_between_front->store          (config.render.framerate.limitG_between_front);
   render.framerate.limitG_back_to_back_return->store    (config.render.framerate.limitG_back_to_back_return);
+  render.framerate.limitG_front_to_back_return->store   (config.render.framerate.limitG_front_to_back_return);
   render.framerate.limitG_between_back_return->store    (config.render.framerate.limitG_between_back_return);
   render.framerate.limitG_non_busy_period->store        (config.render.framerate.limitG_non_busy_period);
   render.framerate.limitG_busy_wait_trig_time->store    (config.render.framerate.limitG_busy_wait_trig_time);
