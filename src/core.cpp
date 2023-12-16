@@ -3107,7 +3107,6 @@ void
 __stdcall
 SK_BeginBufferSwapEx (BOOL bWaitOnFail)
 {
-  LimitTimeGap::onPresentFrontCall();
   if (config.render.framerate.enable_mmcss)
   {
     SK_MMCS_BeginBufferSwap ();
@@ -3867,7 +3866,6 @@ SK_EndBufferSwap (HRESULT hr, IUnknown* device, SK_TLS* pTLS)
        SK_ImGui_DrawGraph_Latency (true);
 
 
-  LimitTimeGap::onPresentBackReturn();
   return hr;
 }
 

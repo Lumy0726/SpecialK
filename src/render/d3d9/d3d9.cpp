@@ -1835,6 +1835,7 @@ SK_D3D9_Present_GrandCentral ( sk_d3d9_swap_dispatch_s* dispatch )
 
     if (trigger_reset == reset_stage_e::Clear)
     {
+      LimitTimeGap::onPresentFrontCall();
       LimitTimeGap::onPresentFront();
       hr = CallFunc ();
       LimitTimeGap::onPresentBack();
@@ -1861,6 +1862,7 @@ SK_D3D9_Present_GrandCentral ( sk_d3d9_swap_dispatch_s* dispatch )
     SK_D3D9_ProcessScreenshotQueue (SK_ScreenshotStage::EndOfFrame);
 
     SK_D3D9_EndFrame ();
+    LimitTimeGap::onPresentBackReturn();
 
 
     if (hr != D3D_OK && trigger_reset == reset_stage_e::Clear)

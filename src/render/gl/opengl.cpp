@@ -2591,6 +2591,8 @@ SK_GL_SwapBuffers (HDC hDC, LPVOID pfnSwapFunc)
     SK_LatentSync_BeginSwap ();
 
 
+    LimitTimeGap::onPresentFrontCall();
+
     if (config.render.framerate.present_interval == 0 &&
         config.render.framerate.target_fps        > 0.0f)
     {
@@ -2704,10 +2706,8 @@ SK_GL_SwapBuffers (HDC hDC, LPVOID pfnSwapFunc)
           SK_LatentSync_BeginSwap ();
 
           SK_GL_SwapInterval (1);
-          LimitTimeGap::onPresentFront();
           status =
             static_cast <wglSwapBuffers_pfn> (pfnSwapFunc)(hDC);
-          LimitTimeGap::onPresentBack();
           SK_GL_SwapInterval (0);
 
           // This info is used to dynamically adjust target
@@ -2734,6 +2734,7 @@ SK_GL_SwapBuffers (HDC hDC, LPVOID pfnSwapFunc)
       static_cast <wglSwapBuffers_pfn> (pfnSwapFunc)(hDC);
   }
 
+  LimitTimeGap::onPresentBackReturn();
   return status;
 }
 
