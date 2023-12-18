@@ -3021,6 +3021,16 @@ __int64 LimitTimeGap::waitForGapULK(
   if (updateStamp) { tickStamp = curTick; }
   return curTick;
 }
+//
+bool LimitTimeGap::isEarly(
+  const LimitTimeGap& input,
+  __int64 usec1,
+  __int64 usec2
+) {
+  __int64 tickDiff =
+    (tickStamp - input.tickStamp) * static_cast<__int64>(1000000) / tickFreq;
+  return tickDiff + usec1 - usec2 < 0;
+}
 
 
 //-------------------------
@@ -3077,19 +3087,45 @@ void LimitTimeGap::onPresentFront() {
   presentStatusFlag = 2;
 
   getTick();
-  //this forces rough rendering time to be greater than value.
-  limitForBackRet2Front.waitForGapULK(
-    limitValueBackRet2Front, false,
-    limitValueNonBusyPeriod, limitValueBusyWaitTrig);
-  //this forces time gap between 'swap' to be greater than value.
-  limitForBack2Front.waitForGapULK(
-    limitValueBack2Front, false,
-    limitValueNonBusyPeriod, limitValueBusyWaitTrig);
-  //this forces time gap between 'present' to be greater than value.
-  limitForBetweenFront.waitForGapULK(
-    limitValueBetweenFront, true,
-    limitValueNonBusyPeriod, limitValueBusyWaitTrig);
+  //a -> limitForBackRet2Front
+  //b -> limitForBack2Front
+  //c -> limitForBetweenFront
+  bool aLessb, bLessc, aLessc;
+  aLessb = limitForBackRet2Front.isEarly(
+    limitForBack2Front,
+    limitValueBackRet2Front,
+    limitValueBack2Front
+  );
+  bLessc = limitForBack2Front.isEarly(
+    limitForBetweenFront,
+    limitValueBack2Front,
+    limitValueBetweenFront
+  );
+  aLessc = limitForBackRet2Front.isEarly(
+    limitForBetweenFront,
+    limitValueBackRet2Front,
+    limitValueBetweenFront
+  );
+  if (!aLessb && !aLessc) {
+    //this forces rough rendering time to be greater than value.
+    limitForBackRet2Front.waitForGapULK(
+      limitValueBackRet2Front, false,
+      limitValueNonBusyPeriod, limitValueBusyWaitTrig);
+  }
+  else if (aLessb && !bLessc) {
+    //this forces time gap between 'swap' to be greater than value.
+    limitForBack2Front.waitForGapULK(
+      limitValueBack2Front, false,
+      limitValueNonBusyPeriod, limitValueBusyWaitTrig);
+  }
+  else {
+    //this forces time gap between 'present' to be greater than value.
+    limitForBetweenFront.waitForGapULK(
+      limitValueBetweenFront, false,
+      limitValueNonBusyPeriod, limitValueBusyWaitTrig);
+  }
   //
+  limitForBetweenFront.updateStampULK();
   limitForFront2BackRet.updateStampULK();
   return;
 }
@@ -3166,20 +3202,46 @@ void LimitTimeGap::onPresentBackReturn() {
   presentStatusFlag = 0;
 
   getTick();
-  //this delays next rendering startup.
-  limitForBack2BackRet.waitForGapULK(
-    limitValueBack2BackRet, false,
-    limitValueNonBusyPeriod, limitValueBusyWaitTrig);
-  //this also delays next rendering startup.
-  limitForFront2BackRet.waitForGapULK(
-    limitValueFront2BackRet, false,
-    limitValueNonBusyPeriod, limitValueBusyWaitTrig);
-  //this forces rough time gap between 'rendering start',
-  //  to be greater than value.
-  limitForBetweenBackRet.waitForGapULK(
-    limitValueBetweenBackRet, true,
-    limitValueNonBusyPeriod, limitValueBusyWaitTrig);
+  //a -> limitForBack2BackRet
+  //b -> limitForFront2BackRet
+  //c -> limitForBetweenBackRet
+  bool aLessb, bLessc, aLessc;
+  aLessb = limitForBack2BackRet.isEarly(
+    limitForFront2BackRet,
+    limitValueBack2BackRet,
+    limitValueFront2BackRet
+  );
+  bLessc = limitForFront2BackRet.isEarly(
+    limitForBetweenBackRet,
+    limitValueFront2BackRet,
+    limitValueBetweenBackRet
+  );
+  aLessc = limitForBack2BackRet.isEarly(
+    limitForBetweenBackRet,
+    limitValueBack2BackRet,
+    limitValueBetweenBackRet
+  );
+  if (!aLessb && !aLessc) {
+    //this delays next rendering startup.
+    limitForBack2BackRet.waitForGapULK(
+      limitValueBack2BackRet, false,
+      limitValueNonBusyPeriod, limitValueBusyWaitTrig);
+  }
+  else if (aLessb && !bLessc) {
+    //this also delays next rendering startup.
+    limitForFront2BackRet.waitForGapULK(
+      limitValueFront2BackRet, false,
+      limitValueNonBusyPeriod, limitValueBusyWaitTrig);
+  }
+  else {
+    //this forces rough time gap between 'rendering start',
+    //  to be greater than value.
+    limitForBetweenBackRet.waitForGapULK(
+      limitValueBetweenBackRet, false,
+      limitValueNonBusyPeriod, limitValueBusyWaitTrig);
+  }
   //
+  limitForBetweenBackRet.updateStampULK();
   limitForBackRet2Front.updateStampULK();
   return;
 }
