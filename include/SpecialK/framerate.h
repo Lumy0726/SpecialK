@@ -852,6 +852,12 @@ public:
     __int64 nonBusyWaitP = static_cast<__int64>(1000),
     __int64 busyWaitTrigT = static_cast<__int64>(2000)
   );
+  //
+  virtual bool isEarly(
+    const LimitTimeGap& input,
+    __int64 usec1 = static_cast<__int64>(0),
+    __int64 usec2 = static_cast<__int64>(0)
+  );
 
   //-------------------------
   //static function of LimitTimeGap
